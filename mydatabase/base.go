@@ -5,13 +5,12 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
+	"golang.org/x/oauth2"
 )
 
 type User struct {
-	AccessToken  string
-	TokenType    string
-	RefreshToken string
-	Expiry       int
+	Token oauth2.Token
+	Email string
 }
 
 var DatabaseConn *pgx.Conn = nil

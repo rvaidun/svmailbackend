@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -25,7 +26,12 @@ var googleOauthConfig = &oauth2.Config{
 	Endpoint:     google.Endpoint,
 }
 
-const oauthGoogleUrlAPI = "https://www.googleapis.com/oauth2/v2/userinfo?access_token="
+type Session struct {
+	User      mydatabase.User
+	CSRFToken string
+}
+
+var SESSIONS = make(map[string]Session)
 
 func oauthGoogleLogin(w http.ResponseWriter, r *http.Request) {
 
@@ -56,27 +62,58 @@ func oauthGoogleCallback(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 		return
 	}
+
 	dbConn, err := mydatabase.CreateConn()
 	if err != nil {
 		log.Println(err.Error())
 		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 		return
 	}
-	data, err := getUserDataFromGoogle(token)
+
+	data, err := GetUserDataFromGoogle(token)
 	if err != nil {
 		log.Println(err.Error())
 		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 		return
 	}
+	userExists, _ := mydatabase.UserExists(dbConn, data.Email)
+	if !userExists {
+		err = mydatabase.CreateUser(dbConn, token, data.Email)
+		if err != nil {
+			log.Println(err.Error())
+			http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+			return
+		}
 
-	err = mydatabase.CreateUserWithToken(dbConn, token, data.Email)
-	if err != nil {
-		log.Println(err.Error())
-		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
-		return
 	}
 	fmt.Printf("User: %v in database\n", data)
+	// Create session ID and csrf token
+	sessionID := generateSessionID()
+	csrfToken := generateSessionID()
+	SESSIONS[sessionID] = Session{User: mydatabase.User{Token: *token, Email: data.Email}, CSRFToken: csrfToken}
 
+	// set session id in cookies
+	http.SetCookie(w, &http.Cookie{
+		Name:     "session_id",
+		Value:    sessionID,
+		Expires:  time.Now().Add(60 * time.Hour),
+		Secure:   true,
+		HttpOnly: true,
+		Path:     "/",
+	})
+
+	// return csrf token in the body
+	var jsonResponse = map[string]string{"csrf_token": csrfToken}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(jsonResponse)
+
+}
+
+func generateSessionID() string {
+	b := make([]byte, 32)
+	rand.Read(b)
+	return base64.URLEncoding.EncodeToString(b)
 }
 
 func generateStateOauthCookie(w http.ResponseWriter) string {
@@ -99,26 +136,7 @@ func getTokenFromCode(code string) (*oauth2.Token, error) {
 	return token, nil
 }
 
-func getUserDataFromGoogle(token *oauth2.Token) (*googleouath2.Userinfo, error) {
-	// Use code to get token and get user info from Google.
-	// response, err := http.Get(oauthGoogleUrlAPI + token.AccessToken)
-	// if err != nil {
-	// 	return nil, fmt.Errorf("failed getting user info: %s", err.Error())
-	// }
-	// defer response.Body.Close()
-	// contents, err := io.ReadAll(response.Body)
-	// if err != nil {
-	// 	return nil, fmt.Errorf("failed read response: %s", err.Error())
-	// }
-	// // parse []byte to json
-
-	// userInfo := UserInfo{}
-	// err = json.Unmarshal(contents, &userInfo)
-	// if err != nil {
-	// 	return nil, fmt.Errorf("failed unmarshal response: %s", err.Error())
-	// }
-
-	// return &userInfo, nil
+func GetUserDataFromGoogle(token *oauth2.Token) (*googleouath2.Userinfo, error) {
 	httpClient := googleOauthConfig.Client(context.Background(), token)
 	// service, err := googleouath2.New(httpClient)
 	service, err := googleouath2.NewService(context.Background(), option.WithHTTPClient(httpClient))
@@ -130,4 +148,45 @@ func getUserDataFromGoogle(token *oauth2.Token) (*googleouath2.Userinfo, error) 
 		return nil, fmt.Errorf("unable to get userinfo: %v", err)
 	}
 	return userinfo, nil
+}
+
+func GetGoogleOauthClient() *googleouath2.Service {
+	httpClient := googleOauthConfig.Client(context.Background(), nil)
+	service, err := googleouath2.NewService(context.Background(), option.WithHTTPClient(httpClient))
+	if err != nil {
+		log.Fatalf("unable to create google service: %v", err)
+	}
+	return service
+}
+
+type contextKey string
+
+const UserKey = contextKey("user")
+
+func AuthenticatedMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		sessionID, err := r.Cookie("session_id")
+		if err != nil {
+			fmt.Println("No session id cookie")
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+		session, ok := SESSIONS[sessionID.Value]
+		if !ok {
+			fmt.Println("No session found")
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		// check if CSRF token is valid
+		// csrfToken := r.Header.Get("X-CSRF-Token")
+		// if csrfToken != session.CSRFToken {
+		// 	fmt.Println("Invalid CSRF token")
+		// 	http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		// 	return
+		// }
+		fmt.Println("Authenticated the following email address: ", session.User.Email)
+		ctx := context.WithValue(r.Context(), UserKey, &session.User)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
 }
