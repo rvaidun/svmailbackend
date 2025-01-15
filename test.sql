@@ -8,8 +8,24 @@ CREATE TABLE public.users (
 );
 
 CREATE TABLE public.scheduled_emails (
-	email_id varchar NOT NULL,
+	message_id varchar NOT NULL,
 	scheduled_time integer NOT NULL,
 	read_receipt boolean NULL,
-	CONSTRAINT scheduled_emails_pk PRIMARY KEY email
+	username varchar NOT NULL, -- this is the email of the user
+	CONSTRAINT scheduled_emails_pk PRIMARY KEY message_id
+);
+
+CREATE TABLE public.tracked_emails (
+	message_id varchar NOT NULL,
+	thread_id varchar NULL,
+	username varchar NOT NULL, -- this is the email of the user
+	CONSTRAINT tracked_emails_pk PRIMARY KEY message_id
+);
+
+-- create table to track the views of an email
+CREATE TABLE public.email_views (
+	message_id varchar NOT NULL,
+	viewed_time integer NOT NULL,
+	username varchar NOT NULL, -- this is the email of the user
+	CONSTRAINT email_views_pk PRIMARY KEY message_id
 );

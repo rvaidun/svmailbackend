@@ -14,7 +14,7 @@ func New() http.Handler {
 	mux.HandleFunc("/auth/google/callback", oauthGoogleCallback)
 
 	// use AuthenticatedMiddleware to protect this route
-	mux.Handle("/userinfo", AuthenticatedMiddleware(http.HandlerFunc(userInfo)))
+	mux.Handle("/email", AuthenticatedMiddleware(http.HandlerFunc(getUserEmail)))
 
 	return mux
 }
