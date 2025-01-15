@@ -1,7 +1,7 @@
 package handlers
 
 // func getScheduledEmails(w http.ResponseWriter, r *http.Request) {
-// 	// We get the user from the context
+// We get the user from the context
 // 	user := r.Context().Value(UserKey).(*mydatabase.User)
 // 	// We write the user information to the response
 // 	w.Write([]byte(fmt.Sprintf("Hello, %s\n", user.Email)))

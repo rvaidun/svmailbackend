@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -9,17 +10,28 @@ import (
 
 func userInfo(w http.ResponseWriter, r *http.Request) {
 	// We get the user from the context
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	user := r.Context().Value(UserKey).(*mydatabase.User)
 	// We write the user information to the response
-	w.Write([]byte(fmt.Sprintf("Hello, %s\n", user.Email)))
 	// get the user data from google
 	googleUserData, err := GetUserDataFromGoogle(&user.Token)
 	if err != nil {
 		fmt.Printf("Error getting user data from google: %v\n", err)
 		return
 	}
-	// write the user data to the response
-	w.Write([]byte(fmt.Sprintf("User data from google: %v\n", googleUserData)))
+	// write the user data to the response as json
+
+	jsonData, err := json.Marshal(googleUserData)
+	if err != nil {
+		fmt.Printf("Error marshalling user data: %v\n", err)
+		http.Error(w, "Error marshalling user data", http.StatusInternalServerError)
+
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(jsonData)
+
 }
 
 func getUserEmail(w http.ResponseWriter, r *http.Request) {

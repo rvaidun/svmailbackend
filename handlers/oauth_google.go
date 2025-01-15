@@ -110,6 +110,23 @@ func oauthGoogleCallback(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func oauthGoogleLogout(w http.ResponseWriter, r *http.Request) {
+	sessionID, err := r.Cookie("session_id")
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+	delete(SESSIONS, sessionID.Value)
+	http.SetCookie(w, &http.Cookie{
+		Name:     "session_id",
+		Value:    "",
+		Expires:  time.Now(),
+		Secure:   true,
+		HttpOnly: true,
+	})
+	w.Write([]byte("Logged out"))
+}
+
 func generateSessionID() string {
 	b := make([]byte, 32)
 	rand.Read(b)
@@ -165,15 +182,24 @@ const UserKey = contextKey("user")
 
 func AuthenticatedMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "OPTIONS" {
+			w.Header().Set("Access-Control-Allow-Origin", "moz-extension://0d05fa30-b941-4dad-9abd-9fadee86fbe8")
+			// remove Content-Type from preflight request
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Cookie")
+
+			return
+		}
 		sessionID, err := r.Cookie("session_id")
 		if err != nil {
 			fmt.Println("No session id cookie")
+			w.Header().Set("Access-Control-Allow-Origin", "moz-extension://0d05fa30-b941-4dad-9abd-9fadee86fbe8")
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
 		session, ok := SESSIONS[sessionID.Value]
 		if !ok {
 			fmt.Println("No session found")
+			w.Header().Set("Access-Control-Allow-Origin", "moz-extension://0d05fa30-b941-4dad-9abd-9fadee86fbe8")
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
@@ -186,6 +212,7 @@ func AuthenticatedMiddleware(next http.Handler) http.Handler {
 		// 	return
 		// }
 		fmt.Println("Authenticated the following email address: ", session.User.Email)
+		w.Header().Set("Access-Control-Allow-Origin", "moz-extension://0d05fa30-b941-4dad-9abd-9fadee86fbe8")
 		ctx := context.WithValue(r.Context(), UserKey, &session.User)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})

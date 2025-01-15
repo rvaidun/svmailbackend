@@ -105,7 +105,7 @@ func handleGetViewsForMessage(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
-	views, err := mydatabase.GetViewsForMessage(conn, messageID)
+	views, err := mydatabase.GetViews(conn, messageID)
 	if err != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
