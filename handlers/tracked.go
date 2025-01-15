@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/rvaidun/svmail/mydatabase"
 )
@@ -19,15 +20,14 @@ func handleGetTrackedEmails(w http.ResponseWriter, r *http.Request) {
 		fmt.Printf("Error creating connection: %v\n", err)
 		return
 	}
-	// get thread ids from the body
-	var thread_ids []string
-	err = json.NewDecoder(r.Body).Decode(&thread_ids)
-	if err != nil {
-		fmt.Printf("Error decoding thread ids: %v\n", err)
-		return
-	}
+	// get thread ids from the query string in the request URI
+	query := r.URL.Query()
+	threadIDs := query["thread_id"]
+
+	fmt.Printf("Thread ids: %v\n", threadIDs)
+
 	// get the tracked emails from the database
-	trackedEmails, err := mydatabase.GetTrackedEmails(conn, thread_ids, user.Email)
+	trackedEmails, err := mydatabase.GetTrackedEmails(conn, threadIDs, user.Email)
 	if err != nil {
 		fmt.Printf("Error getting tracked emails: %v\n", err)
 		return
@@ -70,4 +70,51 @@ func handlePostTrackedEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Write([]byte("Tracked email created"))
+}
+
+func handleViewCount(w http.ResponseWriter, r *http.Request) {
+	// get the id from the request
+	messageID := r.PathValue("message_id")
+
+	curUnixTime := time.Now().Unix()
+
+	ip := r.RemoteAddr
+
+	conn, err := mydatabase.CreateConn()
+	if err != nil {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+	err = mydatabase.CreateView(conn, messageID, curUnixTime, ip)
+	if err != nil {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	// return a 404 page
+	http.Error(w, "Not found!", http.StatusNotFound)
+
+}
+
+func handleGetViewsForMessage(w http.ResponseWriter, r *http.Request) {
+	// get the id from the request
+	messageID := r.PathValue("message_id")
+
+	conn, err := mydatabase.CreateConn()
+	if err != nil {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+	views, err := mydatabase.GetViewsForMessage(conn, messageID)
+	if err != nil {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+	jsonResponse, err := json.Marshal(views)
+	if err != nil {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(jsonResponse)
 }

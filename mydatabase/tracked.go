@@ -39,3 +39,42 @@ func CreateTrackedEmail(conn *pgx.Conn, threadID string, messageID string, usern
 	}
 	return nil
 }
+
+type TrackedEmail struct {
+	ThreadID  string `json:"thread_id"`
+	MessageID string `json:"message_id"`
+	Username  string `json:"username"`
+}
+
+func CreateView(conn *pgx.Conn, messageID string, time int64, ip string) error {
+	_, err := conn.Exec(context.Background(), "INSERT INTO views (message_id, view_time, ip) VALUES ($1, $2, $3)", messageID, time, ip)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type EmailView struct {
+	MessageID string `json:"message_id"`
+	ViewTime  int64  `json:"view_time"`
+	IP        string `json:"ip"`
+}
+
+func GetViews(conn *pgx.Conn, messageID string) ([]EmailView, error) {
+	rows, err := conn.Query(context.Background(), "SELECT message_id, view_time, ip FROM views WHERE message_id = $1", messageID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var views []EmailView
+	for rows.Next() {
+		var view EmailView
+		err := rows.Scan(&view.MessageID, &view.ViewTime, &view.IP)
+		if err != nil {
+			return nil, err
+		}
+		views = append(views, view)
+	}
+	return views, nil
+}
