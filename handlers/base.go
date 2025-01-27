@@ -57,7 +57,7 @@ func New() http.Handler {
 	mux.Handle("/userinfo", AuthenticatedMiddleware(http.HandlerFunc(userInfo)))
 
 	// handler for viewing scheduled emails
-	mux.HandleFunc("/imgs/{message_id}.jpg", handleViewCount)
+	mux.HandleFunc("/imgs/{message_id}/image0.png", handleViewCount)
 
 	return mux
 }

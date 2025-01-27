@@ -47,7 +47,7 @@ type TrackedEmail struct {
 }
 
 func CreateView(conn *pgx.Conn, messageID string, time int64, ip string) error {
-	_, err := conn.Exec(context.Background(), "INSERT INTO views (message_id, view_time, ip) VALUES ($1, $2, $3)", messageID, time, ip)
+	_, err := conn.Exec(context.Background(), "INSERT INTO email_views (message_id, time, ip) VALUES ($1, $2, $3)", messageID, time, ip)
 	if err != nil {
 		return err
 	}
@@ -56,12 +56,12 @@ func CreateView(conn *pgx.Conn, messageID string, time int64, ip string) error {
 
 type EmailView struct {
 	MessageID string `json:"message_id"`
-	ViewTime  int64  `json:"view_time"`
+	ViewTime  int64  `json:"viewed_time"`
 	IP        string `json:"ip"`
 }
 
 func GetViews(conn *pgx.Conn, messageID string) ([]EmailView, error) {
-	rows, err := conn.Query(context.Background(), "SELECT message_id, view_time, ip FROM views WHERE message_id = $1", messageID)
+	rows, err := conn.Query(context.Background(), "SELECT message_id, time, ip FROM email_views WHERE message_id = $1", messageID)
 	if err != nil {
 		return nil, err
 	}

@@ -22,10 +22,10 @@ CREATE TABLE public.tracked_emails (
 	CONSTRAINT tracked_emails_pk PRIMARY KEY message_id
 );
 
--- create table to track the views of an email
 CREATE TABLE public.email_views (
+	-- auto incrementing id
+	view_id SERIAL PRIMARY KEY,
 	message_id varchar NOT NULL,
-	viewed_time integer NOT NULL,
-	username varchar NOT NULL, -- this is the email of the user
-	CONSTRAINT email_views_pk PRIMARY KEY message_id
+	time integer NOT NULL,
+	ip varchar NULL
 );

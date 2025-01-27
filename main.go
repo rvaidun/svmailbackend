@@ -2,23 +2,22 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/rvaidun/svmail/handlers"
 )
 
 func main() {
-	// We create a simple server using http.Server and run.
 	server := &http.Server{
-		Addr:    fmt.Sprintf(":8000"),
+		Addr:    ":8000",
 		Handler: handlers.New(),
 	}
 
-	log.Printf("Starting HTTP Server. Listening at %q", server.Addr)
+	fmt.Printf("Starting HTTP Server. Listening at %q", server.Addr)
 	if err := server.ListenAndServe(); err != http.ErrServerClosed {
-		log.Printf("%v", err)
+		fmt.Printf("%v", err)
 	} else {
-		log.Println("Server closed!")
+		fmt.Println("Server closed!")
 	}
+
 }

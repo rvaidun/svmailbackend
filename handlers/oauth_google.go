@@ -13,6 +13,10 @@ import (
 	"github.com/rvaidun/svmail/mydatabase"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
+
+	// "golang.org/x/oauth2/google"
+
+	// "golang.org/x/oauth2/google"
 	googleouath2 "google.golang.org/api/oauth2/v2"
 	"google.golang.org/api/option"
 )
@@ -32,6 +36,7 @@ type Session struct {
 }
 
 var SESSIONS = make(map[string]Session)
+var accessControlAllowOrigin = "http://localhost:8000, moz-extension://a566e2ab-84a8-4b69-ac4d-3426652a9b98"
 
 func oauthGoogleLogin(w http.ResponseWriter, r *http.Request) {
 
@@ -183,7 +188,7 @@ const UserKey = contextKey("user")
 func AuthenticatedMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "OPTIONS" {
-			w.Header().Set("Access-Control-Allow-Origin", "moz-extension://0d05fa30-b941-4dad-9abd-9fadee86fbe8")
+			w.Header().Set("Access-Control-Allow-Origin", accessControlAllowOrigin)
 			// remove Content-Type from preflight request
 			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Cookie")
 
@@ -192,14 +197,14 @@ func AuthenticatedMiddleware(next http.Handler) http.Handler {
 		sessionID, err := r.Cookie("session_id")
 		if err != nil {
 			fmt.Println("No session id cookie")
-			w.Header().Set("Access-Control-Allow-Origin", "moz-extension://0d05fa30-b941-4dad-9abd-9fadee86fbe8")
+			w.Header().Set("Access-Control-Allow-Origin", accessControlAllowOrigin)
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
 		session, ok := SESSIONS[sessionID.Value]
 		if !ok {
 			fmt.Println("No session found")
-			w.Header().Set("Access-Control-Allow-Origin", "moz-extension://0d05fa30-b941-4dad-9abd-9fadee86fbe8")
+			w.Header().Set("Access-Control-Allow-Origin", accessControlAllowOrigin)
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
@@ -212,7 +217,7 @@ func AuthenticatedMiddleware(next http.Handler) http.Handler {
 		// 	return
 		// }
 		fmt.Println("Authenticated the following email address: ", session.User.Email)
-		w.Header().Set("Access-Control-Allow-Origin", "moz-extension://0d05fa30-b941-4dad-9abd-9fadee86fbe8")
+		w.Header().Set("Access-Control-Allow-Origin", accessControlAllowOrigin)
 		ctx := context.WithValue(r.Context(), UserKey, &session.User)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
