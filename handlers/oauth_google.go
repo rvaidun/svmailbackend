@@ -8,12 +8,10 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/rvaidun/svmail/mydatabase"
 	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
 
 	// "golang.org/x/oauth2/google"
 
@@ -23,13 +21,7 @@ import (
 )
 
 // Scopes: OAuth 2.0 scopes provide a way to limit the amount of access that is granted to an access token.
-var googleOauthConfig = &oauth2.Config{
-	RedirectURL:  os.Getenv("APPLICATION_HOST") + "/auth/google/callback",
-	ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
-	ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
-	Scopes:       []string{"https://www.googleapis.com/auth/userinfo.email", "https://mail.google.com/"},
-	Endpoint:     google.Endpoint,
-}
+var GoogleOauthConfig = &oauth2.Config{}
 
 type Session struct {
 	User      mydatabase.User
@@ -48,7 +40,7 @@ func oauthGoogleLogin(w http.ResponseWriter, r *http.Request) {
 		AuthCodeURL receive state that is a token to protect the user from CSRF attacks. You must always provide a non-empty string and
 		validate that it matches the the state query parameter on your redirect callback.
 	*/
-	u := googleOauthConfig.AuthCodeURL(oauthState)
+	u := GoogleOauthConfig.AuthCodeURL(oauthState)
 	http.Redirect(w, r, u, http.StatusTemporaryRedirect)
 }
 
@@ -152,7 +144,7 @@ func generateStateOauthCookie(w http.ResponseWriter) string {
 }
 
 func getTokenFromCode(code string) (*oauth2.Token, error) {
-	token, err := googleOauthConfig.Exchange(context.Background(), code)
+	token, err := GoogleOauthConfig.Exchange(context.Background(), code)
 	if err != nil {
 		return nil, fmt.Errorf("code exchange wrong: %s", err.Error())
 	}
@@ -160,7 +152,7 @@ func getTokenFromCode(code string) (*oauth2.Token, error) {
 }
 
 func GetUserDataFromGoogle(token *oauth2.Token) (*googleouath2.Userinfo, error) {
-	httpClient := googleOauthConfig.Client(context.Background(), token)
+	httpClient := GoogleOauthConfig.Client(context.Background(), token)
 	// service, err := googleouath2.New(httpClient)
 	service, err := googleouath2.NewService(context.Background(), option.WithHTTPClient(httpClient))
 	if err != nil {
@@ -174,7 +166,7 @@ func GetUserDataFromGoogle(token *oauth2.Token) (*googleouath2.Userinfo, error) 
 }
 
 func GetGoogleOauthClient() *googleouath2.Service {
-	httpClient := googleOauthConfig.Client(context.Background(), nil)
+	httpClient := GoogleOauthConfig.Client(context.Background(), nil)
 	service, err := googleouath2.NewService(context.Background(), option.WithHTTPClient(httpClient))
 	if err != nil {
 		log.Fatalf("unable to create google service: %v", err)

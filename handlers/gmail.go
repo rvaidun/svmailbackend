@@ -12,7 +12,7 @@ import (
 // NewGmailService initializes a new Gmail service client
 
 func GetEmailDataFromGoogle(token *oauth2.Token, emailId string) (*gmail.Message, error) {
-	httpClient := googleOauthConfig.Client(context.Background(), token)
+	httpClient := GoogleOauthConfig.Client(context.Background(), token)
 	// service, err := googleouath2.New(httpClient)
 	service, err := gmail.NewService(context.Background(), option.WithHTTPClient(httpClient))
 	if err != nil {
