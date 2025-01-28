@@ -23,9 +23,9 @@ import (
 
 // Scopes: OAuth 2.0 scopes provide a way to limit the amount of access that is granted to an access token.
 var googleOauthConfig = &oauth2.Config{
-	RedirectURL:  "http://localhost:8000/auth/google/callback",
-	ClientID:     "347014314619-88tqtgk7a71g2c3ra5bg3ombejr2sgi6.apps.googleusercontent.com",
-	ClientSecret: "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",
+	RedirectURL:  "https://9900-76-102-151-249.ngrok-free.app/auth/google/callback",
+	ClientID:     "347014314619-71v3ljfnvmplfmqel13vd6ui9eprstuf.apps.googleusercontent.com",
+	ClientSecret: "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",
 	Scopes:       []string{"https://www.googleapis.com/auth/userinfo.email", "https://mail.google.com/"},
 	Endpoint:     google.Endpoint,
 }
@@ -36,7 +36,7 @@ type Session struct {
 }
 
 var SESSIONS = make(map[string]Session)
-var accessControlAllowOrigin = "http://localhost:8000, moz-extension://a566e2ab-84a8-4b69-ac4d-3426652a9b98"
+var ACCESSCONTROLALLOWORIGIN = "http://localhost:8000, moz-extension://97fa2cd7-c52d-4194-9072-7a7e760407d2/src/popup/index.html, https://9900-76-102-151-249.ngrok-free.app, moz-extension://97fa2cd7-c52d-4194-9072-7a7e760407d2/, https://mail.google.com"
 
 func oauthGoogleLogin(w http.ResponseWriter, r *http.Request) {
 
@@ -188,7 +188,7 @@ const UserKey = contextKey("user")
 func AuthenticatedMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "OPTIONS" {
-			w.Header().Set("Access-Control-Allow-Origin", accessControlAllowOrigin)
+			w.Header().Set("Access-Control-Allow-Origin", ACCESSCONTROLALLOWORIGIN)
 			// remove Content-Type from preflight request
 			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Cookie")
 
@@ -197,14 +197,14 @@ func AuthenticatedMiddleware(next http.Handler) http.Handler {
 		sessionID, err := r.Cookie("session_id")
 		if err != nil {
 			fmt.Println("No session id cookie")
-			w.Header().Set("Access-Control-Allow-Origin", accessControlAllowOrigin)
+			w.Header().Set("Access-Control-Allow-Origin", ACCESSCONTROLALLOWORIGIN)
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
 		session, ok := SESSIONS[sessionID.Value]
 		if !ok {
 			fmt.Println("No session found")
-			w.Header().Set("Access-Control-Allow-Origin", accessControlAllowOrigin)
+			w.Header().Set("Access-Control-Allow-Origin", ACCESSCONTROLALLOWORIGIN)
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
@@ -217,7 +217,7 @@ func AuthenticatedMiddleware(next http.Handler) http.Handler {
 		// 	return
 		// }
 		fmt.Println("Authenticated the following email address: ", session.User.Email)
-		w.Header().Set("Access-Control-Allow-Origin", accessControlAllowOrigin)
+		w.Header().Set("Access-Control-Allow-Origin", ACCESSCONTROLALLOWORIGIN)
 		ctx := context.WithValue(r.Context(), UserKey, &session.User)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})

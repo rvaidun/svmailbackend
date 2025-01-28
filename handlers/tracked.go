@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/rvaidun/svmail/mydatabase"
@@ -111,16 +112,21 @@ func handleViewCount(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func handleGetViewsForMessage(w http.ResponseWriter, r *http.Request) {
+func handleGetLatestViewForMessage(w http.ResponseWriter, r *http.Request) {
 	// get the id from the request
-	messageID := r.PathValue("message_id")
+	// messageID := r.PathValue("message_id")
+	messageID := r.URL.Query().Get("email_ids")
+	fmt.Printf("Message ID: %v\n", messageID)
+	// split the message id by comma
+	messageIDs := strings.Split(messageID, ",")
+	fmt.Printf("Message IDs: %v\n", messageIDs)
 
 	conn, err := mydatabase.CreateConn()
 	if err != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
-	views, err := mydatabase.GetViews(conn, messageID)
+	views, err := mydatabase.GetLatestView(conn, messageIDs)
 	if err != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
@@ -131,5 +137,7 @@ func handleGetViewsForMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Write(jsonResponse)
+	// w.Write(([]byte("Hello")))
 }

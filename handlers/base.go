@@ -58,6 +58,7 @@ func New() http.Handler {
 
 	// handler for viewing scheduled emails
 	mux.HandleFunc("/imgs/{message_id}/image0.png", handleViewCount)
+	mux.HandleFunc("/read-receipt", handleGetLatestViewForMessage)
 
 	return mux
 }

@@ -78,3 +78,32 @@ func GetViews(conn *pgx.Conn, messageID string) ([]EmailView, error) {
 	}
 	return views, nil
 }
+
+func GetLatestView(conn *pgx.Conn, messageIDs []string) ([]EmailView, error) {
+	// get the latest view for each message id
+	rows, err := conn.Query(context.Background(), "SELECT DISTINCT ON (message_id) message_id, time, ip FROM email_views WHERE message_id = ANY($1) ORDER BY message_id, time DESC", messageIDs)
+	if err != nil {
+		return nil, err
+	}
+	// add all messageIDs to a Set
+	messageIDSET := make(map[string]bool)
+	defer rows.Close()
+	var views []EmailView
+	for rows.Next() {
+		var view EmailView
+		err := rows.Scan(&view.MessageID, &view.ViewTime, &view.IP)
+		if err != nil {
+			return nil, err
+		}
+		views = append(views, view)
+		messageIDSET[view.MessageID] = true
+	}
+	// for any message id that does not have a view, add an empty view
+
+	for _, messageID := range messageIDs {
+		if _, ok := messageIDSET[messageID]; !ok {
+			views = append(views, EmailView{MessageID: messageID})
+		}
+	}
+	return views, nil
+}
