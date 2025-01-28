@@ -19,5 +19,4 @@ func main() {
 	} else {
 		fmt.Println("Server closed!")
 	}
-
 }

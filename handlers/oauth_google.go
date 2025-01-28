@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/rvaidun/svmail/mydatabase"
@@ -23,9 +24,9 @@ import (
 
 // Scopes: OAuth 2.0 scopes provide a way to limit the amount of access that is granted to an access token.
 var googleOauthConfig = &oauth2.Config{
-	RedirectURL:  "https://9900-76-102-151-249.ngrok-free.app/auth/google/callback",
-	ClientID:     "347014314619-71v3ljfnvmplfmqel13vd6ui9eprstuf.apps.googleusercontent.com",
-	ClientSecret: "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",
+	RedirectURL:  os.Getenv("APPLICATION_HOST") + "/auth/google/callback",
+	ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
+	ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
 	Scopes:       []string{"https://www.googleapis.com/auth/userinfo.email", "https://mail.google.com/"},
 	Endpoint:     google.Endpoint,
 }
