@@ -2,11 +2,26 @@
 
 <head>
 </head>
+<script>
+    function logout() {
+        fetch('/auth/logout', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({})
+        }).then(res => {
+            if (res.status === 200) {
+                window.location.href = '/';
+            }
+        });
+    }
+</script>
 
 <body>
     {{if .IsAuthenticated}}
     <h1>Welcome {{.User.Email}}</h1>
-    <a href="/auth/logout">Logout</a>
+    <a href="javascript:logout()">Logout</a>
     {{else}}
     <a href="/auth/google/login" style="text-transform:none">Login with Google</a>
     {{end}}
